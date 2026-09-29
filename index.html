@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Year 2 Shop Helpers</title>
+<style>
+:root{font-family:Arial,sans-serif;color-scheme:light dark;--bg:light-dark(#f4f8ff,#182235);--surface:light-dark(#fff,#243149);--text:light-dark(#172033,#f5f7fb);--muted:light-dark(#5b667a,#c5ccda);--border:light-dark(#cbd5e1,#46536a);--accent:light-dark(#3867e8,#7ea0ff);--good:light-dark(#138a58,#51d79b);--bad:light-dark(#d94a4a,#ff8585)}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text)} #app{min-height:100vh;background:var(--bg);padding:24px clamp(16px,4vw,48px)}
+.wrap{max-width:1000px;margin:auto}.hero{text-align:center;margin-bottom:22px}.hero h1{font-size:clamp(28px,5vw,44px);margin:4px 0 8px}.hero p{font-size:18px;color:var(--muted);margin:0}.score{display:flex;justify-content:center;gap:12px;margin:18px 0}.pill{background:var(--surface);border:2px solid var(--border);border-radius:999px;padding:9px 16px;font-weight:700}
+.game{display:grid;grid-template-columns:1fr 1.15fr;gap:20px}.panel{background:var(--surface);border:2px solid var(--border);border-radius:20px;padding:20px}.panel h2{margin:0 0 14px;font-size:21px}.instruction{background:light-dark(#edf3ff,#293a59);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-weight:700}
+.cards{display:grid;gap:12px}.card{background:var(--bg);border:3px solid var(--accent);border-radius:16px;padding:15px;cursor:grab;box-shadow:0 3px 0 light-dark(#bdc9e8,#101a2c);touch-action:none}.card:active{cursor:grabbing}.card.dragging{opacity:.55}.card strong{display:block;font-size:19px;margin-bottom:5px}.card small{color:var(--muted);font-size:14px}
+.targets{display:grid;gap:12px}.target{min-height:92px;border:3px dashed var(--border);border-radius:16px;padding:13px;transition:.15s}.target.over{border-color:var(--accent);background:light-dark(#edf3ff,#293a59);transform:scale(1.01)}.target.correct{border-style:solid;border-color:var(--good)}.target.wrong{border-color:var(--bad)}.target-title{font-weight:800;font-size:17px;margin-bottom:5px}.target-desc{color:var(--muted);font-size:15px;line-height:1.3}.placed{margin-top:8px;background:var(--surface);border-radius:10px;padding:8px 10px;font-weight:700;border:1px solid var(--border)}
+#message{text-align:center;min-height:32px;font-weight:800;font-size:18px;margin:17px 0}.buttons{text-align:center}.btn{border:0;border-radius:12px;padding:11px 18px;font-weight:800;font-size:16px;cursor:pointer;background:var(--accent);color:white}.btn:focus-visible,.card:focus-visible{outline:4px solid light-dark(#9db5ff,#b8c9ff);outline-offset:3px}
+@media(max-width:750px){.game{grid-template-columns:1fr}.panel{padding:16px}}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap">
+<header class="hero"><h1>🛒 Shop Technology Match-Up</h1><p>Match each word box to the correct picture or description box.</p><div class="access-note">🌐 This is a standalone activity. Pupils do <strong>not</strong> need to sign in to ChatGPT to use it when the HTML page is shared.</div></header>
+<div class="score"><div class="pill">⭐ Correct: <span id="score">0</span> / 10</div><div class="pill">🎯 Keep trying until you match them all!</div></div>
+<main class="game">
+<section class="panel"><h2>1️⃣ Word Boxes</h2><div class="instruction">👆 Drag a word box to its matching box on the right. On a tablet, tap a word, then tap its match.</div><div id="cards" class="cards"></div></section>
+<section class="panel"><h2>2️⃣ Match the Description</h2><div id="targets" class="targets"></div></section>
+</main>
+<div id="message" aria-live="polite"></div><div class="buttons"><button class="btn" id="reset">🔄 Start Again</button></div>
+</div></div>
+<script>
+const items=[
+ {id:'barcode',name:'1. Barcode',hint:'A code found on a shop item.',correct:'Black and white lines on a shop item.'},
+ {id:'barcode',name:'1. Barcode',hint:'A code found on a shop item.',correct:'Black and white lines on a shop item.'},
+ {id:'scanner',name:'2. Scanner',hint:'A tool used to read a code.',correct:'A tool that shines a light and beeps to read a code.'},
+ {id:'customer',name:'3. Customer',hint:'A person shopping in a shop.',correct:'A person who picks items to buy in a shop.'},
+ {id:'price',name:'4. Price Finder',hint:'Helps find the cost of an item.',correct:'A system that finds how much money an item costs.'},
+ {id:'receipt',name:'5. Receipt',hint:'A paper slip from the checkout.',correct:'A paper slip that shows what you bought and the total cost.'},
+ {id:'till',name:'6. Supermarket Till',hint:'A machine at the checkout.',correct:'The machine at the shop checkout that scans items and counts the bill.'},
+ {id:'bankcard',name:'7. Bank Card',hint:'A card used to pay.',correct:'A plastic card used to pay for shopping without paper money.'},
+ {id:'computer',name:'8. Computer',hint:'A digital device that works with information.',correct:'A digital device that works with information very quickly.'},
+ {id:'traffic',name:'9. Traffic Light',hint:'Technology used on roads.',correct:'Technology on the road that tells cars and people when to stop or go.'},
+ {id:'devices',name:'10. IT Devices',hint:'Technology tools that work together.',correct:'Technology tools that work together to make jobs faster and easier.'}
+];
+const cards=document.getElementById('cards'),targets=document.getElementById('targets'),scoreEl=document.getElementById('score'),msg=document.getElementById('message');let selectedId=null;
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function render(){cards.innerHTML='';targets.innerHTML='';msg.textContent='';scoreEl.textContent='0';
+ shuffle(items).forEach(x=>{let d=document.createElement('div');d.className='card';d.draggable=true;d.tabIndex=0;d.dataset.id=x.id;d.innerHTML=`<strong>${x.name}</strong><small>${x.hint}</small>`;d.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',x.id);d.classList.add('dragging')});d.addEventListener('dragend',()=>d.classList.remove('dragging'));d.addEventListener('click',()=>{document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));d.classList.add('selected');selectedId=x.id;msg.textContent='Now tap the job box that matches.'});cards.appendChild(d)});
+ shuffle(items).forEach(x=>{let t=document.createElement('div');t.className='target';t.dataset.id=x.id;t.innerHTML=`<div class="target-title">${x.name} does this:</div><div class="target-desc">${x.correct}</div>`;t.addEventListener('dragover',e=>{e.preventDefault();t.classList.add('over')});t.addEventListener('dragleave',()=>t.classList.remove('over'));t.addEventListener('drop',e=>{e.preventDefault();t.classList.remove('over');place(e.dataTransfer.getData('text/plain'),x.id,t)});t.addEventListener('click',()=>{if(selectedId){place(selectedId,x.id,t);selectedId=null}});targets.appendChild(t)});
+}
+function place(cardId,targetId,target){let card=document.querySelector(`.card[data-id="${cardId}"]`);if(!card)return;if(cardId===targetId){target.classList.add('correct');target.innerHTML+=`<div class="placed">✅ ${items.find(x=>x.id===cardId).name}</div>`;card.remove();let n=+scoreEl.textContent+1;scoreEl.textContent=n;if(n===10){msg.textContent='🎉 Fantastic! You matched all 10!';}else msg.textContent='Great job! Keep going!';}else{target.classList.add('wrong');msg.textContent='Not quite — try that card in a different box.';setTimeout(()=>target.classList.remove('wrong'),550)}}
+document.getElementById('reset').onclick=render;render();
+</script>
+</body></html>
